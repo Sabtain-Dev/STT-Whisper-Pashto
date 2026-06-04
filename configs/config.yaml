@@ -1,0 +1,3 @@
+model_name: whisper-pashto
+language: pashto
+version: 1.1

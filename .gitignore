@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Model checkpoints
+checkpoints/
+*.bin
+*.pt
+*.ckpt
+
+# Environment
+.env
+
+# Streamlit cache
+.streamlit/

@@ -8,5 +8,5 @@
 
 Dataset Link:
 ```bash
-https://huggingface.co/datasets/Sabtain_Dev/Pashto-ASR-Dataset
+https://huggingface.co/datasets/Sabtain-Dev/Pashto-ASR-Dataset
 ```

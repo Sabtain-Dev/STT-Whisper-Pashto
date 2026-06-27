@@ -10,3 +10,8 @@
 ```bash
 https://www.kaggle.com/datasets/itssabtain/pashto-asr-dataset
 ```
+
+## Finetuned Model
+```bash
+https://huggingface.co/Sabtain-Dev/STT-Whisper-Pashto
+```

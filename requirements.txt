@@ -25,7 +25,7 @@ streamlit>=1.28.0
 pyngrok>=6.0.0
 
 # Database
-sqlite3  # Built-in with Python
+# sqlite3  # Built-in with Python
 
 # HTTP requests
 requests>=2.31.0
@@ -33,3 +33,5 @@ requests>=2.31.0
 # Utilities
 python-dotenv>=1.0.0  # For environment variables (recommended)
 tqdm>=4.65.0
+
+huggingface_hub

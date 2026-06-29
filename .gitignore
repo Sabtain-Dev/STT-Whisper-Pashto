@@ -1,18 +1,87 @@
 # Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+*.so
+*.dylib
+*.dll
 
 # Jupyter
 .ipynb_checkpoints/
+*.ipynb
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.env/
+.venv/
+venv.bak/
+env.bak/
+pythonenv*
 
 # Model checkpoints
 checkpoints/
 *.bin
 *.pt
 *.ckpt
+*.pth
+*.h5
+*.pb
+*.onnx
+*.tflite
 
-# Environment
+# Environment variables
 .env
+.env.local
+.env.*.local
 
 # Streamlit cache
 .streamlit/
+.streamlit/cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# Data files
+*.wav
+*.mp3
+*.flac
+*.m4a
+*.json
+*.csv
+*.xlsx
+*.xls
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Build
+dist/
+build/
+*.egg-info/
+*.whl
+*.egg
+
+# Whisper specific
+models/
+model_cache/
+
+# OS
+Thumbs.db
+desktop.ini
+
+# Database
+*.db

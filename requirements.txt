@@ -34,4 +34,11 @@ requests>=2.31.0
 python-dotenv>=1.0.0
 tqdm>=4.65.0
 
+# Hugging Face Hub
 huggingface_hub
+
+# API and web server
+fastapi
+uvicorn
+python-multipart
+pydantic

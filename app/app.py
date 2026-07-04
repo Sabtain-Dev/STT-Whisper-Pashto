@@ -93,10 +93,8 @@ ENGLISH_CODE = "eng_Latn"
 URDU_CODE = "urd_Arab"
 
 # AI Assistant hits external free inference APIs with your transcription text
-# as context. Off by default unless a token is present or explicitly enabled.
-ENABLE_AI_ASSISTANT = os.environ.get(
-    "ENABLE_AI_ASSISTANT", "true" if HF_TOKEN else "false"
-).lower() == "true"
+# as context. Always visible in the UI; each user supplies their own free HF
+# token the first time they open the tab, and it's saved to their account.
 
 # ── Database ────────────────────────────────────────────────────────────────
 
@@ -139,6 +137,10 @@ def init_db():
         c.execute("ALTER TABLE users ADD COLUMN email TEXT")
     if "password_salt" not in user_cols:
         c.execute("ALTER TABLE users ADD COLUMN password_salt TEXT")
+    if "ai_hf_token" not in user_cols:
+        c.execute("ALTER TABLE users ADD COLUMN ai_hf_token TEXT")
+    if "ai_hf_token_updated_at" not in user_cols:
+        c.execute("ALTER TABLE users ADD COLUMN ai_hf_token_updated_at TEXT")
 
     trans_cols = {row[1] for row in c.execute("PRAGMA table_info(transcriptions)")}
     migrations = {
@@ -215,6 +217,30 @@ def create_user(username, email, password):
     conn.commit()
     conn.close()
     return True, "Account created! Please log in."
+
+
+def get_user_ai_token(user_id):
+    conn = get_db()
+    row = conn.execute("SELECT ai_hf_token FROM users WHERE id=?", (user_id,)).fetchone()
+    conn.close()
+    return row[0].strip() if row and row[0] else None
+
+
+def save_user_ai_token(user_id, token):
+    conn = get_db()
+    conn.execute(
+        "UPDATE users SET ai_hf_token=?, ai_hf_token_updated_at=? WHERE id=?",
+        (token.strip(), datetime.now().isoformat(), user_id),
+    )
+    conn.commit()
+    conn.close()
+
+
+def clear_user_ai_token(user_id):
+    conn = get_db()
+    conn.execute("UPDATE users SET ai_hf_token=NULL, ai_hf_token_updated_at=NULL WHERE id=?", (user_id,))
+    conn.commit()
+    conn.close()
 
 
 def verify_user(identifier, password):
@@ -401,10 +427,10 @@ def make_excel_bytes(rows, headers):
 
 # ── AI Chat — optional, external free APIs ─────────────────────────────────
 
-def _try_hf_inference(prompt, system_msg):
-    if not HF_TOKEN:
+def _try_hf_inference(prompt, system_msg, token):
+    if not token:
         return None
-    req_headers = {"Authorization": f"Bearer {HF_TOKEN}", "Content-Type": "application/json"}
+    req_headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     models_to_try = [
         ("HuggingFaceH4/zephyr-7b-beta", f"<|system|>\n{system_msg}</s>\n<|user|>\n{prompt}</s>\n<|assistant|>"),
         ("mistralai/Mistral-7B-Instruct-v0.1", f"[INST] {system_msg}\n\n{prompt} [/INST]"),
@@ -446,8 +472,8 @@ def _try_pollinations(prompt, system_msg):
     return None
 
 
-def ask_ai_free(prompt, system_msg):
-    result = _try_hf_inference(prompt, system_msg)
+def ask_ai_free(prompt, system_msg, token):
+    result = _try_hf_inference(prompt, system_msg, token)
     if result:
         return result, None
     result = _try_pollinations(prompt, system_msg)
@@ -455,7 +481,7 @@ def ask_ai_free(prompt, system_msg):
         return result, None
     return None, (
         "AI Assistant is unavailable right now.\n\n"
-        "1. Set `HF_TOKEN` in your `.env` file, then restart the app\n"
+        "1. Double-check your Hugging Face token is valid (Settings → Change token below)\n"
         "2. Wait 30 seconds and try again (free models may be waking up)\n"
         "3. Check your internet connection"
     )
@@ -531,7 +557,7 @@ def show_translation_box(tid, pashto_text, existing_en, existing_ur):
             st.info(f"**Translation Quality:** {lbl} (similarity {score}%)")
             if back:
                 with st.expander("Back-translated Pashto"):
-                    st.text(back)
+                    st.markdown(f'<div class="pashto-text">{back}</div>', unsafe_allow_html=True)
 
     if ur_val:
         st.text_area("Urdu", value=ur_val, height=85, key="disp_ur_" + str(tid))
@@ -550,7 +576,7 @@ def show_translation_box(tid, pashto_text, existing_en, existing_ur):
             st.info(f"**Translation Quality:** {lbl} (similarity {score}%)")
             if back:
                 with st.expander("Back-translated Pashto"):
-                    st.text(back)
+                    st.markdown(f'<div class="pashto-text">{back}</div>', unsafe_allow_html=True)
 
 # ── Pages ────────────────────────────────────────────────────────────────
 
@@ -752,10 +778,10 @@ def history_page():
                 st.warning(f"Audio file not found: {filename}")
             if original and original != (edited or original):
                 with st.expander("View original (unedited)"):
-                    st.text(original)
+                    st.markdown(f'<div class="pashto-text">{original}</div>', unsafe_allow_html=True)
             edited_val = st.text_area("Pashto Transcription (editable)", value=edited or original or "",
                                        key=f"edit_{tid}", height=120)
-            new_ref = st.text_input("Reference text for WER", value=reference or "", key=f"ref_{tid}")
+            new_ref = st.text_input("Reference Pashto text for WER", value=reference or "", key=f"ref_{tid}")
             if wer_score is not None:
                 wer_badge(wer_score)
             col1, col2, col3, col4 = st.columns(4)
@@ -792,15 +818,55 @@ def history_page():
             show_translation_box(tid, edited_val, en_t, ur_t)
 
 
+def _token_setup_form(user_id, first_time=True):
+    """Prompt to save a Hugging Face token for this account."""
+    if first_time:
+        st.info(
+            "**One-time setup:** the AI Assistant uses your own free Hugging Face token "
+            "so it can call HF's inference API on your behalf. It's saved to your account "
+            "on this device — you won't need to enter it again unless it expires or you "
+            "want to change it."
+        )
+    st.markdown(
+        "Don't have one? Create a free token at "
+        "[huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) "
+        "(a **read** token is enough), then paste it below."
+    )
+    with st.form("hf_token_form", clear_on_submit=False):
+        token_input = st.text_input("Hugging Face token", type="password", placeholder="hf_...")
+        submitted = st.form_submit_button("Save Token", type="primary", use_container_width=True)
+    if submitted:
+        token_input = token_input.strip()
+        if not token_input:
+            st.warning("Please paste a token first.")
+        elif not token_input.startswith("hf_"):
+            st.warning("That doesn't look like a Hugging Face token — it should start with `hf_`.")
+        else:
+            save_user_ai_token(user_id, token_input)
+            st.success("Token saved! You won't need to enter it again on this device.")
+            st.rerun()
+
+
 def ai_chat_page():
     st.header("AI Assistant")
-    st.caption("Ask anything about your Pashto transcriptions — optional feature using free external APIs.")
-    if not HF_TOKEN:
-        st.warning(
-            "**HF_TOKEN not set** — add it to your `.env` file for better AI quality.\n\n"
-            "Get one free at huggingface.co/settings/tokens. Without a token, the Pollinations.ai fallback is used."
-        )
-    rows = get_user_history(st.session_state.user_id)
+    st.caption("Ask anything about your Pashto transcriptions — powered by your own free Hugging Face token.")
+
+    user_id = st.session_state.user_id
+    token = get_user_ai_token(user_id)
+
+    if not token:
+        _token_setup_form(user_id, first_time=True)
+        return
+
+    masked = f"hf_...{token[-4:]}" if len(token) > 4 else "hf_***"
+    with st.expander(f"Using saved token ({masked}) — change or remove it"):
+        _token_setup_form(user_id, first_time=False)
+        if st.button("Remove saved token", use_container_width=True):
+            clear_user_ai_token(user_id)
+            st.success("Token removed.")
+            st.rerun()
+
+    rows = get_user_history(user_id)
     trans_labels = ["(none — type your own context)"]
     trans_texts = [""]
     for r in rows:
@@ -808,7 +874,7 @@ def ai_chat_page():
         trans_labels.append(f"{fname} | {ts[:10]}")
         trans_texts.append(edited or orig or "")
     idx = st.selectbox("Load a saved transcription as context", range(len(trans_labels)), format_func=lambda i: trans_labels[i])
-    context_text = st.text_area("Context", value=trans_texts[idx], height=130)
+    context_text = st.text_area("Context (Pashto text)", value=trans_texts[idx], height=130)
     system_msg = st.text_input("System instruction",
                                 value="You are a helpful assistant specializing in Pashto language and transcription analysis.")
     user_question = st.text_area("Your question", height=100)
@@ -818,7 +884,7 @@ def ai_chat_page():
         else:
             prompt = (f"Transcription context:\n{context_text.strip()}\n\n" if context_text.strip() else "") + user_question.strip()
             with st.spinner("Asking AI (up to 60 seconds on free tier)..."):
-                answer, err = ask_ai_free(prompt, system_msg)
+                answer, err = ask_ai_free(prompt, system_msg, token)
             if err:
                 st.error(err)
             else:
@@ -834,8 +900,41 @@ def ai_chat_page():
 def main():
     st.set_page_config(page_title="Pashto Whisper", page_icon="🎙", layout="wide", initial_sidebar_state="expanded")
     st.markdown(
-        '<style>[data-testid="stSidebar"]{background:#0f172a;}'
-        '[data-testid="stSidebar"] *{color:#e2e8f0 !important;}</style>',
+        '<style>'
+        '[data-testid="stSidebar"]{background:#0f172a;}'
+        '[data-testid="stSidebar"] *{color:#e2e8f0 !important;}'
+        # Urdu font — Jameel Noori Nastaleeq (local static/ file first, CDN fallback)
+        "@font-face {"
+        "  font-family: 'JameelNooriNastaleeq';"
+        "  src: url('app/static/JameelNooriNastaleeq.woff2') format('woff2'),"
+        "       url('https://cdn.jsdelivr.net/gh/tariq-abdullah/urdu-web-font-CDN/JameelNooriNastaleeq.woff') format('woff');"
+        "  font-weight: normal; font-style: normal; font-display: swap;"
+        "}"
+        # Pashto font — Noto Naskh Arabic from Google Fonts. Unlike Urdu Nastaleeq
+        # fonts, this has correct glyph forms for Pashto-only letters
+        # (ږ ښ ړ ډ ټ ڼ etc.) instead of rendering them broken/disconnected.
+        "@import url('https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;700&display=swap');"
+        # Pashto fields
+        'textarea[aria-label*="Pashto"], input[aria-label*="Pashto"] {'
+        "  font-family: 'Noto Naskh Arabic', serif !important;"
+        "  font-size: 22px !important; line-height: 2 !important;"
+        "  direction: rtl; text-align: right;"
+        "}"
+        ".pashto-text {"
+        "  font-family: 'Noto Naskh Arabic', serif;"
+        "  font-size: 22px; line-height: 2; direction: rtl; text-align: right;"
+        "}"
+        # Urdu fields (translation output only)
+        'textarea[aria-label="Urdu"] {'
+        "  font-family: 'JameelNooriNastaleeq', 'Noto Nastaliq Urdu', serif !important;"
+        "  font-size: 22px !important; line-height: 2.1 !important;"
+        "  direction: rtl; text-align: right;"
+        "}"
+        ".urdu-text {"
+        "  font-family: 'JameelNooriNastaleeq', 'Noto Nastaliq Urdu', serif;"
+        "  font-size: 22px; line-height: 2.1; direction: rtl; text-align: right;"
+        "}"
+        "</style>",
         unsafe_allow_html=True,
     )
     if "logged_in" not in st.session_state:
@@ -848,9 +947,7 @@ def main():
         st.markdown("## 🎙️ Pashto Whisper")
         st.markdown(f"**User: {st.session_state.username}**")
         st.markdown("---")
-        nav_options = ["About", "Transcribe", "History"]
-        if ENABLE_AI_ASSISTANT:
-            nav_options.append("AI Assistant")
+        nav_options = ["About", "Transcribe", "History", "AI Assistant"]
         page = st.radio("Navigate", nav_options, label_visibility="collapsed")
         st.markdown("---")
         if not JIWER_AVAILABLE:
@@ -859,7 +956,8 @@ def main():
         st.caption(f"Device      : {device_label}")
         st.caption("Model       : Merged Whisper+LoRA (utils.inference)")
         st.caption(f"Storage     : {APP_DATA_DIR}")
-        st.caption("AI Assistant: " + ("ON" if ENABLE_AI_ASSISTANT else "OFF"))
+        ai_status = "configured" if get_user_ai_token(st.session_state.user_id) else "needs setup"
+        st.caption(f"AI Assistant: {ai_status}")
         st.markdown("---")
         if st.button("Free Up Memory", use_container_width=True,
                       help="Unloads cached models from RAM. They'll reload next time you use them."):

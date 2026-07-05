@@ -1,17 +1,115 @@
-## Project Structure
+# Speech-to-Text- Finetuning On Regional Language (Pashto)
 
-- notebooks/ → experimentation
-- app/ → Streamlit frontend
-- utils/ → helper functions
-- configs/ → project configuration
-- results/ → inference outputs
+An end-to-end, resource-efficient Speech-to-Text (ASR) system built to fine-tune and serve OpenAI's Whisper architecture specifically for regional **Pakistani Pashto**. The project includes a dual-interface architecture: an interactive Streamlit frontend for end-users, and a highly modular, versioned FastAPI backend engineered for high-throughput microservices deployment.
 
-## Dataset Link
-```bash
-https://www.kaggle.com/datasets/itssabtain/pashto-asr-dataset
+## 🎯 Project Overview & Highlights
+* **Target Dialect:** Pakistani Regional Pashto language structure.
+* **Core Model:** Whisper-Small fine-tuned using Low-Rank Adaptation (LoRA) and merged for optimized execution footprints.
+* **Accuracy Performance:** Reached a target Word Error Rate (WER) of **43.83%** (recorded from a baseline error rate of over 100%).
+* **Hardware Profile:** Engineered to support runtime environments utilizing standard hardware constraints (CPU execution friendly, low VRAM configurations).
+
+---
+
+## 📊 Dataset Link
+The baseline model training and evaluations were driven by a custom, curated regional linguistic corpus containing over 5,000 highly targeted audio tracks across domains like agriculture, health, services, and general communication.
+* **Kaggle Dataset:** [Pashto ASR Dataset](https://www.kaggle.com/datasets/itssabtain/pashto-asr-dataset)
+
+## 🤗 Finetuned Model
+The baked-in Whisper-LoRA model is open-sourced and hosted directly on the Hugging Face Model Hub for single source of truth accessibility:
+* **Hugging Face Repository:** [Sabtain-Dev/STT-Whisper-Pashto](https://huggingface.co/Sabtain-Dev/STT-Whisper-Pashto)
+
+---
+
+## 📁 Project Structure
+
+```text
+STT_Whisper_Pashto/
+│
+├── api/                        # Production Decoupled FastAPI Backend Layer
+│   ├── routes/                 # Explicitly versioned routing endpoints
+│   │   └── transcription.py
+│   ├── schemas/                # Pydantic request/response validation models
+│   │   ├── request.py
+│   │   └── response.py
+│   ├── services/               # Core business logic handlers (disk staging & verification)
+│   │   └── transcription_service.py
+│   ├── config.py               # Environmental configuration and settings controller
+│   ├── dependencies.py         # Thread-safe model singleton dependency injection matrix
+│   ├── exceptions.py           # Custom application domain error wrappers
+│   ├── logger.py               # Centralized structured application runtime logger
+│   └── main.py                 # Core API application engine gatekeeper
+│
+├── app/                        # Streamlit Interactive User UI Frontend Application
+│   └── app.py
+│
+├── utils/                      # Shared Core Machine Learning Utilities
+│   ├── inference.py            # Centralized ML source of truth (PashtoTranscriber)
+│   ├── audio_utils.py          # Waveform decoders and audio standardizers
+│   └── model_utils.py          # Weights management utilities
+│
+├── notebooks/                  # Experimental training scripts & model evaluation labs
+├── configs/                    # Static configuration parameter specifications
+├── workspace_data/             # Local database assets, upload stores, and API temp storage
+├── Dockerfile                  # Multi-stage production container engine configurations
+├── requirements.txt            # Project application dependency requirements management
+└── README.md                   # System configuration and documentation handbook
 ```
 
-## Finetuned Model
+---
+
+## 🚀 Getting Started & Execution
+### 1. Prerequisites & Environment Setup
+Ensure your local environment uses Python 3.10. Install core system utilities like ffmpeg to enable sound track parsing on your machine:
 ```bash
-https://huggingface.co/Sabtain-Dev/STT-Whisper-Pashto
+# Clone the repository
+git clone [https://github.com/Sabtain-Dev/STT-Whisper-Pashto.git](https://github.com/Sabtain-Dev/STT-Whisper-Pashto.git)
+cd STT-Whisper-Pashto
+
+# Set up and activate a virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows use: .\venv\Scripts\activate
+
+# Install application dependencies
+pip install -r requirements.txt
 ```
+
+### 2. Configure Environment Variables
+Create an environmental validation configuration file named .env inside your root workspace directory:
+```bash
+APP_NAME="Pashto Whisper Production API"
+DEBUG=False
+MERGED_MODEL_PATH="Sabtain-Dev/STT-Whisper-Pashto"
+HF_TOKEN=""
+```
+
+### 3. Launching the FastAPI Backend Service
+```bash
+python -m uvicorn api.main:app --reload
+```
+- Interactive API Documentation Portal (Swagger UI): http://localhost:8000/api/v1/docs
+- Alternative Static UI (ReDoc): http://localhost:8000/api/v1/redoc
+
+### 4. Running the Streamlit Frontend UI
+#### Features:
+* Upload audio (wav, mp3, mp4, etc.)
+* Automatic transcription (Pashto)
+* Editable output
+* WER comparison with reference text
+* Translation support (English & Urdu)
+* User login system (SQLite database)
+
+#### Run App Locally
+```bash
+streamlit run app/app.py
+```
+
+---
+
+## ⭐ Acknowledgements
+
+* OpenAI Whisper
+* Hugging Face Transformers
+* PEFT / LoRA research
+* Streamlit community
+
+---

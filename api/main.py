@@ -1,34 +1,35 @@
 # api/main.py
 
-# This file serves as the main entry point for starting the FastAPI engine. It configures app wide metadata parameters and mounts your application routing blocks.
-# (The App Gatekeeper): This file is the entry point. It initializes the FastAPI framework application instance, configures global settings (like security CORS rules), defines documentation metadata (title, version, docs URLs), and links the endpoint paths.
+# Binds global components together, mounting versioned routes onto an explicit path space (/api/v1) while attaching exception handling layers cleanly.
 
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from api.routes import router
+from api.config import settings
+from api.routes.transcription import router as transcription_router
+from api.exceptions import register_exception_handlers
+from api.logger import logger
 
-# Define robust API Metadata specifications
+# Initialize production configuration metadata
 app = FastAPI(
-    title="Pashto Whisper STT API",
-    description="Production-ready FastAPI backend for regional Pakistani Pashto Speech-to-Text inference.",
+    title=settings.APP_NAME,
+    description="Production-ready versioned REST API engine for regional Peshawari dialect Automatic Speech Recognition.",
     version="1.3",
-    docs_url="/docs",
-    redoc_url="/redoc"
+    docs_url=f"{settings.API_V1_STR}/docs",
+    redoc_url=f"{settings.API_V1_STR}/redoc"
 )
 
-# Configure CORS Middleware for robust local/remote endpoint communication
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"], # Adjust explicitly to match your deploy schema ports
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Register robust architectural validation error handlers
+register_exception_handlers(app)
 
-# Include decoupled service endpoints matrix router
-app.include_router(router)
+# Mount the decoupled versioned routing structures securely
+app.include_router(transcription_router, prefix=settings.API_V1_STR)
+
+@app.on_event("startup")
+async def startup_event():
+    logger.info(f"==========================================================")
+    logger.info(f" Starting System Initialization Suite for: {settings.APP_NAME}")
+    logger.info(f" API Routing Space Context URL: {settings.API_V1_STR}")
+    logger.info(f"==========================================================")
 
 if __name__ == "__main__":
     import uvicorn
-    # Execute with optimal worker threading mapping for resource efficiency
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

@@ -1,3 +1,6 @@
+# utils/inference.py
+# utils/inference.py (The Machine Learning Engine): This houses the actual Hugging Face Transformers model instance setup. The service layer invokes this module to perform the heavy computational tasks (loading weights, processing waveform vectors via audio decoders, and returning text tokens).
+
 import torch
 from .audio_utils import preprocess_audio
 from .model_utils import load_inference_components

@@ -5,14 +5,15 @@ Runs locally on a user's device (VS Code / terminal: `streamlit run app.py`).
 No Google Drive dependency — all data lives under a local `workspace_data/`
 folder next to this file (override with the APP_DATA_DIR env var).
 
-Model inference is delegated to utils/inference.py (PashtoTranscriber), the
-same code path already validated in the Colab notebook, so behavior matches
-what you tested there.
+Transcription is delegated to the project's FastAPI service (api/) over
+HTTP — this app no longer loads the Whisper model in-process. Start the API
+separately (see README) before using the Transcribe tab. Translation
+(NLLB) and everything else still run locally in this Streamlit process,
+unchanged.
 """
 
 import os
 import re
-import sys
 import csv
 import io
 import secrets
@@ -45,13 +46,8 @@ except ImportError:
 import requests
 from transformers import pipeline as hf_pipeline
 
-# ── Make the project's `utils` package importable ─────────────────────────
 APP_DIR = Path(__file__).resolve().parent
 ROOT_DIR = APP_DIR.parent
-if str(ROOT_DIR) not in sys.path:
-    sys.path.append(str(ROOT_DIR))
-
-from utils.inference import PashtoTranscriber  # noqa: E402
 
 # ── Config file (configs/config.yaml) ──────────────────────────────────────
 CONFIG_PATH = ROOT_DIR / "configs" / "config.yaml"
@@ -66,16 +62,16 @@ def load_config():
 
 CONFIG = load_config()
 
-# ── Model resolution: local folder first (offline-friendly), else HF Hub ──
-DEFAULT_MODEL_REPO = "Sabtain-Dev/STT-Whisper-Pashto"
-LOCAL_MODEL_DIR = ROOT_DIR / "models" / CONFIG.get("model_name", "whisper-pashto")
-HF_TOKEN = os.environ.get("HF_TOKEN", "").strip()
-
-
-def resolve_model_path():
-    if LOCAL_MODEL_DIR.exists() and any(LOCAL_MODEL_DIR.iterdir()):
-        return str(LOCAL_MODEL_DIR)
-    return os.environ.get("MODEL_REPO", DEFAULT_MODEL_REPO)
+# ── Transcription API client config ────────────────────────────────────────
+# Matches api/config.py's Settings.API_V1_STR default ("/api/v1") and the
+# router prefix in api/routes/transcription.py ("/transcription").
+API_BASE_URL = os.environ.get("API_BASE_URL", "http://localhost:8000").rstrip("/")
+API_V1_STR = os.environ.get("API_V1_STR", "/api/v1")
+API_TRANSCRIPTION_PREFIX = f"{API_V1_STR}/transcription"
+API_HEALTH_URL = f"{API_BASE_URL}{API_TRANSCRIPTION_PREFIX}/health"
+API_MODEL_INFO_URL = f"{API_BASE_URL}{API_TRANSCRIPTION_PREFIX}/model-info"
+API_TRANSCRIBE_URL = f"{API_BASE_URL}{API_TRANSCRIPTION_PREFIX}/transcribe"
+API_REQUEST_TIMEOUT = int(os.environ.get("API_REQUEST_TIMEOUT", "500"))
 
 
 # ── Local, per-device storage (no Drive dependency) ────────────────────────
@@ -329,18 +325,76 @@ def get_user_history(user_id):
     conn.close()
     return rows
 
-# ── Model loading (memory-efficient: cached singleton, loaded once) ───────
+# ── Transcription — delegated to the FastAPI service over HTTP ────────────
 
 
-@st.cache_resource(show_spinner="Loading Pashto speech model (first run may take a few minutes)...")
-def get_transcriber():
-    model_path = resolve_model_path()
-    return PashtoTranscriber(model_id_or_path=model_path, hf_token=HF_TOKEN or None)
+@st.cache_data(ttl=30, show_spinner=False)
+def check_api_health():
+    """Cached for 30s so we don't hit /health on every Streamlit rerun."""
+    try:
+        r = requests.get(API_HEALTH_URL, timeout=50)
+        if r.status_code == 200:
+            return True, r.json().get("status", "healthy")
+        return False, f"HTTP {r.status_code}"
+    except requests.exceptions.RequestException as e:
+        return False, str(e)
 
 
-def transcribe_audio(audio_path):
-    transcriber = get_transcriber()
-    return transcriber.transcribe(audio_path)
+@st.cache_data(ttl=30, show_spinner=False)
+def get_api_model_info():
+    try:
+        r = requests.get(API_MODEL_INFO_URL, timeout=50)
+        if r.status_code == 200:
+            return r.json()
+    except requests.exceptions.RequestException:
+        pass
+    return None
+
+
+def transcribe_via_api(audio_path, reference_text=None):
+    """
+    Calls POST {API_TRANSCRIBE_URL} with the audio file (multipart) and an
+    optional reference_text form field, matching api/routes/transcription.py
+    and api/schemas/response.py::TranscriptionResponse.
+
+    Returns (transcription, wer_score, processing_time_sec, model_version, error).
+    On failure, the first four values are None and `error` holds a
+    user-facing message.
+    """
+    filename = os.path.basename(audio_path)
+    try:
+        with open(audio_path, "rb") as f:
+            files = {"file": (filename, f)}
+            data = {}
+            if reference_text and reference_text.strip():
+                data["reference_text"] = reference_text.strip()
+            resp = requests.post(API_TRANSCRIBE_URL, files=files, data=data, timeout=API_REQUEST_TIMEOUT)
+    except requests.exceptions.ConnectionError:
+        return None, None, None, None, (
+            f"Could not reach the Transcription API at {API_BASE_URL}. "
+            "Make sure it's running, e.g.:\n\n`uvicorn api.main:app --host 0.0.0.0 --port 8000`"
+        )
+    except requests.exceptions.Timeout:
+        return None, None, None, None, "The Transcription API timed out. Try a shorter audio clip or check the API server."
+    except requests.exceptions.RequestException as e:
+        return None, None, None, None, f"Request to the Transcription API failed: {e}"
+
+    if resp.status_code == 200:
+        payload = resp.json()
+        return (
+            payload.get("transcription", ""),
+            payload.get("wer_score"),
+            payload.get("processing_time_sec"),
+            payload.get("model_version"),
+            None,
+        )
+
+    # api/exceptions.py returns {"success": False, "detail": "..."} on errors
+    try:
+        detail = resp.json().get("detail", resp.text)
+    except ValueError:
+        detail = resp.text
+    return None, None, None, None, f"API error ({resp.status_code}): {detail}"
 
 
 @st.cache_resource(show_spinner="Loading translation model...")
@@ -444,7 +498,7 @@ def _try_hf_inference(prompt, system_msg, token):
             "options": {"wait_for_model": True, "use_cache": False},
         }
         try:
-            r = requests.post(url, headers=req_headers, json=payload, timeout=90)
+            r = requests.post(url, headers=req_headers, json=payload, timeout=500)
             if r.status_code == 200:
                 data = r.json()
                 text = ""
@@ -464,7 +518,7 @@ def _try_pollinations(prompt, system_msg):
         import urllib.parse
         combined = f"{system_msg}\n\nUser question: {prompt}"
         encoded = urllib.parse.quote(combined[:800])
-        r = requests.get(f"https://text.pollinations.ai/{encoded}", timeout=60)
+        r = requests.get(f"https://text.pollinations.ai/{encoded}", timeout=500)
         if r.status_code == 200 and r.text.strip():
             return r.text.strip()
     except Exception:
@@ -604,13 +658,14 @@ def about_page():
         "This application uses a **fine-tuned OpenAI Whisper** model trained on "
         "**Pakistani Pashto** speech, with LoRA weights fully merged into the base model. "
         "It converts spoken Pashto into written Pashto text, then optionally translates to "
-        "English or Urdu — everything runs on your device; nothing is uploaded to Google Drive."
+        "English or Urdu. Transcription runs through the project's own Transcription API "
+        "(started separately); translation and everything else runs locally in this app."
     )
     st.markdown("---")
     st.subheader("Features")
     features = [
         ("🎤 Multi-format Audio Upload", "WAV, MP3, M4A, OGG, FLAC, MP4, OPUS, WEBM, AAC, WMA."),
-        ("📝 Pashto Transcription", "Merged Whisper model via the shared utils.inference package."),
+        ("📝 Pashto Transcription", "Merged Whisper model served by the project's own Transcription API."),
         ("✏️ Editable Transcriptions", "Correct mistakes and save the improved version."),
         ("📊 WER Scoring", "Paste reference text to get Word Error Rate + accuracy %."),
         ("🌐 English & Urdu Translation", "NLLB-200 600M runs locally — no API needed."),
@@ -668,6 +723,13 @@ def transcribe_page():
     st.header("Transcribe Audio")
     st.caption("Supported: " + ", ".join("." + f for f in SUPPORTED_FORMATS))
 
+    healthy, detail = check_api_health()
+    if not healthy:
+        st.error(
+            f"Transcription API is unreachable at `{API_BASE_URL}` ({detail}). "
+            "Start it first, e.g.: `uvicorn api.main:app --host 0.0.0.0 --port 8000`"
+        )
+
     uploaded_files = st.file_uploader("Upload audio files", type=SUPPORTED_FORMATS, accept_multiple_files=True)
     ref_text = st.text_area("Reference text (optional) — paste correct Pashto text to calculate WER", height=70)
     if not uploaded_files:
@@ -697,15 +759,27 @@ def transcribe_page():
             out.write(f.getbuffer())
 
         st.audio(str(tmp_path))
-        with st.spinner(f"Transcribing {f.name}..."):
-            text = transcribe_audio(str(tmp_path))
-        wer_score = compute_wer(ref_text, text) if ref_text.strip() else None
+        with st.spinner(f"Transcribing {f.name} via API..."):
+            text, api_wer, proc_time, model_version, err = transcribe_via_api(str(tmp_path), ref_text)
+
+        if err:
+            st.error(err)
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass
+            progress_bar.progress((i + 1) / len(uploaded_files), text=f"Failed {i+1}/{len(uploaded_files)}")
+            continue
+
+        wer_score = api_wer if api_wer is not None else compute_wer(ref_text, text)
         tid = save_transcription(
             st.session_state.user_id, f.name, text,
             audio_filepath=str(saved_path), reference=ref_text.strip() or None, wer_score=wer_score,
         )
         all_results.append((tid, f.name, text, wer_score))
         st.text_area(f"Pashto Transcription — {f.name}", value=text, height=100, key=f"res_{i}_{tid}")
+        if model_version or proc_time is not None:
+            st.caption(f"Model: {model_version or 'n/a'}  ·  API processing time: {proc_time if proc_time is not None else 'n/a'}s")
         if wer_score is not None:
             wer_badge(wer_score)
         elif ref_text.strip() and not JIWER_AVAILABLE:
@@ -953,8 +1027,14 @@ def main():
         if not JIWER_AVAILABLE:
             st.warning("WER disabled. Run: pip install jiwer")
         device_label = "GPU (CUDA)" if torch.cuda.is_available() else "CPU"
-        st.caption(f"Device      : {device_label}")
-        st.caption("Model       : Merged Whisper+LoRA (utils.inference)")
+        st.caption(f"Local device : {device_label} (translation)")
+        api_healthy, api_detail = check_api_health()
+        if api_healthy:
+            info = get_api_model_info()
+            model_label = info.get("model", "STT-Whisper-Pashto") if info else "connected"
+            st.caption(f"Transcription API : ✅ {model_label}")
+        else:
+            st.caption(f"Transcription API : ❌ unreachable ({api_detail})")
         st.caption(f"Storage     : {APP_DATA_DIR}")
         ai_status = "configured" if get_user_ai_token(st.session_state.user_id) else "needs setup"
         st.caption(f"AI Assistant: {ai_status}")

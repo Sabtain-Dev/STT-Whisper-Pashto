@@ -1,0 +1,39 @@
+# Dockerfile.fastapi
+
+# Use an explicit, optimized Python runtime base image
+FROM python:3.10-slim
+
+# Install system dependencies required for ML audio processing frameworks
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set centralized working context directory
+WORKDIR /workspace
+
+# Set environment variables to optimize Python runtime tracking inside Docker
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/workspace
+
+# Leverage Docker layer caching by copying requirements first
+COPY requirements.txt .
+
+# Install only what the API actually needs (fastapi/uvicorn were missing
+# entirely before — this file includes them)
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the core code layers required for execution
+COPY api/ ./api/
+COPY utils/ ./utils/
+
+# Expose production port
+EXPOSE 8000
+
+# Lightweight healthcheck used by docker-compose's depends_on: condition
+HEALTHCHECK --interval=15s --timeout=5s --start-period=45s --retries=10 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/transcription/health', timeout=3)" || exit 1
+
+# Run Uvicorn bootstrapper targeting the global host adapter interface
+CMD ["python", "-m", "uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]

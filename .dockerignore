@@ -1,0 +1,95 @@
+# Git metadata
+.git
+.gitignore
+
+# Application local states and development assets
+workspace_data/
+notebooks/
+.ipynb_checkpoints/
+fastapi.log
+streamlit.log
+backend_url.txt
+frontend_url.txt
+
+# IDE metadata
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+*.dylib
+*.dll
+
+# Jupyter
+*.ipynb
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+venv.bak/
+env.bak/
+pythonenv*
+
+# Model checkpoints (models are downloaded from HF Hub at runtime, not baked in)
+checkpoints/
+models/
+model_cache/
+*.bin
+*.pt
+*.ckpt
+*.pth
+*.h5
+*.pb
+*.onnx
+*.tflite
+
+# Environment variables — never bake secrets into the image
+.env
+.env.local
+.env.*.local
+
+# Streamlit — keep config.toml (needed for enableStaticServing / local fonts),
+# only ignore its cache directory
+**/.streamlit/cache/
+
+# Logs
+logs/
+*.log
+
+# Local data files
+*.wav
+*.mp3
+*.flac
+*.m4a
+*.json
+*.csv
+*.xlsx
+*.xls
+*.ogg
+*.db
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+*.whl
+*.egg
+
+# OS
+Thumbs.db
+desktop.ini

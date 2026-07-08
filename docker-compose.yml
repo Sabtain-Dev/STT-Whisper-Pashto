@@ -1,0 +1,49 @@
+# docker-compose.yml
+# Note: no top-level `version:` key — Docker Desktop's bundled Compose V2
+# uses the Compose Specification, which doesn't need it (and warns that
+# it's obsolete if present).
+
+services:
+  fastapi:
+    build:
+      context: .
+      dockerfile: Dockerfile.fastapi
+    container_name: pashto_whisper_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_NAME=Pashto Whisper Production API
+      - DEBUG=False
+      - MERGED_MODEL_PATH=Sabtain-Dev/STT-Whisper-Pashto
+      # Optional: only needed for private HF repos or to raise rate limits.
+      # Reads from a .env file placed next to this docker-compose.yml, or
+      # from your shell environment. Safe to leave blank.
+      - HF_TOKEN=${HF_TOKEN:-}
+    volumes:
+      - pashto_shared_data:/workspace/workspace_data
+    restart: unless-stopped
+
+  streamlit:
+    build:
+      context: .
+      dockerfile: Dockerfile.streamlit
+    container_name: pashto_whisper_frontend
+    ports:
+      - "8501:8501"
+    environment:
+      # These must match what app.py actually reads (API_BASE_URL + API_V1_STR,
+      # not a single combined PASHTO_API_URL — that was the earlier bug).
+      # "fastapi" resolves via Docker's internal DNS to the fastapi service.
+      - API_BASE_URL=http://fastapi:8000
+      - API_V1_STR=/api/v1
+      - APP_DATA_DIR=/workspace/workspace_data
+    volumes:
+      - pashto_shared_data:/workspace/workspace_data
+    depends_on:
+      fastapi:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pashto_shared_data:
+    driver: local

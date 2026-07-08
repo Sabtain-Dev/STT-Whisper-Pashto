@@ -2,6 +2,8 @@
 
 An end-to-end, resource-efficient Speech-to-Text (ASR) system built to fine-tune and serve OpenAI's Whisper architecture specifically for regional **Pakistani Pashto**. The project includes a dual-interface architecture: an interactive Streamlit frontend for end-users, and a highly modular, versioned FastAPI backend engineered for high-throughput microservices deployment.
 
+---
+
 ## 🎯 Project Overview & Highlights
 * **Target Dialect:** Pakistani Regional Pashto language structure.
 * **Core Model:** Whisper-Small fine-tuned using Low-Rank Adaptation (LoRA) and merged for optimized execution footprints.
@@ -50,10 +52,69 @@ STT_Whisper_Pashto/
 ├── notebooks/                  # Experimental training scripts & model evaluation labs
 ├── configs/                    # Static configuration parameter specifications
 ├── workspace_data/             # Local database assets, upload stores, and API temp storage
-├── Dockerfile                  # Multi-stage production container engine configurations
-├── requirements.txt            # Project application dependency requirements management
+|
+├── Dockerfile.fastapi          # Dockerfile for the FastAPI backend
+├── Dockerfile.streamlit        # Dockerfile for the Streamlit frontend
+├── docker-compose.yml          # Docker Compose configuration for multi-container orchestration
+├── .dockerignore               # Docker ignore file to exclude unnecessary files from the build context
+|
+├── requirements.txt            # Python dependencies for the project
 └── README.md                   # System configuration and documentation handbook
 ```
+
+---
+
+## Production Architecture: Decoupled API & Frontend
+
+The system has been updated into a decoupled, scalable multi-tier architecture. Machine learning inference tasks are handled exclusively by a robust **FastAPI backend**, while the user interface is served independently by a lightweight **Streamlit client application**.
+```text
+┌─────────────────┐  HTTP Requests (POST /transcribe)   ┌─────────────────┐
+│                 │ ──────────────────────────────────> │                 │
+│    Streamlit    │                                     │     FastAPI     │
+│  Frontend UI    │ <────────────────────────────────── │  Inference Core │
+│                 │       Structured JSON Response      │  (Whisper/LoRA) │
+└─────────────────┘                                     └─────────────────┘
+```
+
+---
+
+## 🐳 Docker Deployment & Containerization
+
+The system runs on a containerized architecture managed by Docker Compose. This ensures unified environment setups, isolates runtime dependencies, and isolates data flows across production services.
+
+### Architecture Composition
+1. **Frontend (`pashto_whisper_frontend`):** Lightweight interactive dashboard stream. Employs internal DNS hooks to securely proxy computational audio files.
+2. **Backend (`pashto_whisper_backend`):** High-throughput microservice layer utilizing a dedicated machine-learning processing footprint. Instantiates Whisper weights internally and outputs structured metrics.
+
+### Docker Core Prerequisites
+Ensure you have [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed on your host machine and that the service daemon engine is running.
+
+### Quick Start Commands
+
+* **Build Container Images:**
+  Build both services from local configuration parameters:
+  ```bash
+  docker compose build
+  ```
+
+* **Launch the Stack Environment:**
+Boot up the interconnected ecosystem nodes:
+```bash
+docker compose up
+```
+
+* **Verify Interface Connectivity Links:**
+1. Interactive Frontend UI: Open http://localhost:8501 to access the main user app.
+2. Self-Documenting API Portal: Open http://localhost:8000/api/v1/docs to test endpoints via Swagger.
+
+* **Shut Down the Services:**
+Stop and remove container instances smoothly:
+```bash
+docker compose down
+```
+
+* **Data Persistence Matrix:**
+User account schemas, history metrics, and audio staging blocks are persistently written to a local named Docker volume (pashto_shared_data). Your local transaction logs remain safe even if your containers are destroyed or updated.
 
 ---
 

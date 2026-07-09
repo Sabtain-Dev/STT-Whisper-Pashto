@@ -1,34 +1,36 @@
 # api/main.py
-
-# Binds global components together, mounting versioned routes onto an explicit path space (/api/v1) while attaching exception handling layers cleanly.
-
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from api.config import settings
 from api.routes.transcription import router as transcription_router
 from api.exceptions import register_exception_handlers
 from api.logger import logger
 
-# Initialize production configuration metadata
-app = FastAPI(
-    title=settings.APP_NAME,
-    description="Production-ready versioned REST API engine for regional Peshawari dialect Automatic Speech Recognition.",
-    version="1.3",
-    docs_url=f"{settings.API_V1_STR}/docs",
-    redoc_url=f"{settings.API_V1_STR}/redoc"
-)
-
-# Register robust architectural validation error handlers
-register_exception_handlers(app)
-
-# Mount the decoupled versioned routing structures securely
-app.include_router(transcription_router, prefix=settings.API_V1_STR)
-
-@app.on_event("startup")
-async def startup_event():
+# Modern lifespan approach replacing on_event
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     logger.info(f"==========================================================")
     logger.info(f" Starting System Initialization Suite for: {settings.APP_NAME}")
     logger.info(f" API Routing Space Context URL: {settings.API_V1_STR}")
     logger.info(f"==========================================================")
+    yield  # Runs the application while keeping initialization intact
+
+app = FastAPI(
+    title=settings.APP_NAME,
+    description="Production-ready versioned REST API engine for regional Pashto Automatic Speech Recognition.",
+    version="1.3",
+    docs_url=f"{settings.API_V1_STR}/docs",
+    redoc_url=f"{settings.API_V1_STR}/redoc",
+    lifespan=lifespan # Injected here
+)
+
+register_exception_handlers(app)
+
+@app.get("/health", tags=["System Status"])
+def health_check():
+    return {"status": "healthy", "service": "Pashto ASR Core"}
+
+app.include_router(transcription_router, prefix=settings.API_V1_STR)
 
 if __name__ == "__main__":
     import uvicorn

@@ -1,0 +1,5 @@
+# Use for tests/.py files
+
+pytest 
+httpx 
+pytest-mock

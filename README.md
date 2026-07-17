@@ -4,6 +4,11 @@ An end-to-end, resource-efficient Speech-to-Text (ASR) system built to fine-tune
 
 ---
 
+# 🚀 STT-Whisper-Pashto
+
+[![Continuous Integration](https://github.com/Sabtain-Dev/STT-Whisper-Pashto/actions/workflows/ci.yml/badge.svg)](https://github.com/Sabtain-Dev/STT-Whisper-Pashto/actions/workflows/ci.yml)
+
+---
 ## 🎯 Project Overview & Highlights
 * **Target Dialect:** Pakistani Regional Pashto language structure.
 * **Core Model:** Whisper-Small fine-tuned using Low-Rank Adaptation (LoRA) and merged for optimized execution footprints.

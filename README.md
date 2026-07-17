@@ -166,6 +166,41 @@ streamlit run app/app.py
 
 ---
 
+## 🧪 Automated Testing Matrix
+
+This project uses `pytest` to maintain structural integrity across all components before build compilation or deployment.
+
+### Test Architecture Blueprint
+* **Unit Tests (`tests/test_audio.py`):** Low-overhead structural assertion sweeps validating individual modules (e.g., extensions, normalization paths).
+* **API Route Assertions (`tests/test_api.py`):** Challenges API integrity profiles, network responses, and input boundary exception rules.
+* **Integration Pipeline (`tests/test_inference.py`):** Mocks processing bottlenecks to validate the full workflow from initial file consumption down to output parameter mapping.
+
+### Running the Test Suite
+1. Ensure development requirements are active in your local virtual environment context.
+2. Execute the test command runner from the root directory:
+```bash
+pytest -v
+```
+
+---
+
+## ⚙️ Continuous Integration (CI)
+
+This project uses **GitHub Actions** to guarantee system stability and prevent regression errors.
+
+### What the Pipeline Does
+On every `push` or `pull_request` targeting the `main` branch, the runner automatically:
+1. Spins up a clean Ubuntu virtual machine.
+2. Configures a Python 3.10 execution environment.
+3. Installs runtime dependencies (`requirements.txt`) and test-suite utilities (`requirements_dev.txt`).
+4. Runs **Ruff** to enforce clean code formatting and catch syntax mistakes.
+5. Runs **Pytest** with path mapping injected to evaluate unit, API, and integration test coverage.
+
+### Monitoring Runs
+You can inspect active build sequences, execution logs, and detailed step breakdowns under the **Actions** tab of this repository.
+
+---
+
 ## ⭐ Acknowledgements
 
 * OpenAI Whisper

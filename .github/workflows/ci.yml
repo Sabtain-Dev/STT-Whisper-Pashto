@@ -1,0 +1,44 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test-and-lint:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. Checkout the repository code
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    # 2. Set up a Python environment matching your local setup (3.10)
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v5
+      with:
+        python-state: '3.10'
+        cache: 'pip' # Speeds up subsequent runs by caching pip downloads
+
+    # 3. Upgrade pip and install both base and dev dependencies
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        if [ -f requirements_dev.txt ]; then pip install -r requirements_dev.txt; fi
+        pip install ruff # Ensure ruff is available for code-quality checks
+
+    # 4. Check for syntax errors, unresolved imports, and style violations
+    - name: Lint with Ruff
+      run: |
+        # stop the build if there are Python syntax errors or undefined names
+        ruff check . --output-format=github
+
+    # 5. Run the full test suite with root pathing explicitly configured
+    - name: Run Tests with Pytest
+      env:
+        PYTHONPATH: .
+      run: |
+        pytest -v

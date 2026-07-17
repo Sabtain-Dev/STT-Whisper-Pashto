@@ -1,5 +1,5 @@
 # tests/test_inference.py
-import pytest
+# import pytest
 
 def test_end_to_end_transcription_pipeline_mocked(client, mock_pashto_audio, mocker):
     """Verifies system flow from file intake down to structured response payloads."""

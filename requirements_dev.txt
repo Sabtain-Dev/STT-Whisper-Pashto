@@ -3,3 +3,4 @@
 pytest 
 httpx 
 pytest-mock
+ruff # Used for CI: Github Actions linting and formatting checks

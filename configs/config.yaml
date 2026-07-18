@@ -1,3 +1,11 @@
 model_name: whisper-pashto
 language: pashto
-version: 1.1
+version: 2.0
+type: transcription
+base_model: whisper-small
+wer: 0.43
+finetuned: true
+training_steps: 7200
+api: fastapi
+container: docker
+version control: git

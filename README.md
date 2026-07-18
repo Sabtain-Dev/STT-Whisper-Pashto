@@ -1,12 +1,8 @@
 # Speech-to-Text- Finetuning On Regional Language (Pashto)
 
-An end-to-end, resource-efficient Speech-to-Text (ASR) system built to fine-tune and serve OpenAI's Whisper architecture specifically for regional **Pakistani Pashto**. The project includes a dual-interface architecture: an interactive Streamlit frontend for end-users, and a highly modular, versioned FastAPI backend engineered for high-throughput microservices deployment.
-
----
-
-# 🚀 STT-Whisper-Pashto
-
 [![Continuous Integration](https://github.com/Sabtain-Dev/STT-Whisper-Pashto/actions/workflows/ci.yml/badge.svg)](https://github.com/Sabtain-Dev/STT-Whisper-Pashto/actions/workflows/ci.yml)
+
+An end-to-end, resource-efficient Speech-to-Text (ASR) system built to fine-tune and serve OpenAI's Whisper architecture specifically for regional **Pakistani Pashto**. The project includes a dual-interface architecture: an interactive Streamlit frontend for end-users, and a highly modular, versioned FastAPI backend engineered for high-throughput microservices deployment.
 
 ---
 ## 🎯 Project Overview & Highlights

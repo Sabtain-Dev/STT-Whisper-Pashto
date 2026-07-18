@@ -68,10 +68,14 @@ CONFIG = load_config()
 API_BASE_URL = os.environ.get("API_BASE_URL", "http://localhost:8000").rstrip("/")
 API_V1_STR = os.environ.get("API_V1_STR", "/api/v1")
 API_TRANSCRIPTION_PREFIX = f"{API_V1_STR}/transcription"
-API_HEALTH_URL = f"{API_BASE_URL}{API_TRANSCRIPTION_PREFIX}/health"
+
+# FIX: Point health directly to the root application space as defined in main.py
+API_HEALTH_URL = f"{API_BASE_URL}/health"
+
+# These stay the same as they correctly process through the transcription router
 API_MODEL_INFO_URL = f"{API_BASE_URL}{API_TRANSCRIPTION_PREFIX}/model-info"
 API_TRANSCRIBE_URL = f"{API_BASE_URL}{API_TRANSCRIPTION_PREFIX}/transcribe"
-API_REQUEST_TIMEOUT = int(os.environ.get("API_REQUEST_TIMEOUT", "500"))
+API_REQUEST_TIMEOUT = int(os.environ.get("API_REQUEST_TIMEOUT", "600"))
 
 
 # ── Local, per-device storage (no Drive dependency) ────────────────────────

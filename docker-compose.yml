@@ -10,14 +10,14 @@ services:
       dockerfile: Dockerfile.fastapi
     container_name: pashto_whisper_backend
     ports:
-      - "8000:8000"
+      - "${FASTAPI_PORT:-8000}:8000"
+    env_file:
+      - .env
     environment:
-      - APP_NAME=Pashto Whisper Production API
-      - DEBUG=False
-      - MERGED_MODEL_PATH=Sabtain-Dev/STT-Whisper-Pashto
-      # Optional: only needed for private HF repos or to raise rate limits.
-      # Reads from a .env file placed next to this docker-compose.yml, or
-      # from your shell environment. Safe to leave blank.
+      - APP_NAME=${APP_NAME:-Pashto Whisper Production API}
+      - ENV_MODE=${ENV_MODE:-production}
+      - DEBUG=${DEBUG:-False}
+      - MERGED_MODEL_PATH=${MERGED_MODEL_PATH:-Sabtain-Dev/STT-Whisper-Pashto}
       - HF_TOKEN=${HF_TOKEN:-}
     volumes:
       - pashto_shared_data:/workspace/workspace_data
@@ -29,13 +29,12 @@ services:
       dockerfile: Dockerfile.streamlit
     container_name: pashto_whisper_frontend
     ports:
-      - "8501:8501"
+      - "${STREAMLIT_PORT:-8501}:8501"
+    env_file:
+      - .env
     environment:
-      # These must match what app.py actually reads (API_BASE_URL + API_V1_STR,
-      # not a single combined PASHTO_API_URL — that was the earlier bug).
-      # "fastapi" resolves via Docker's internal DNS to the fastapi service.
       - API_BASE_URL=http://fastapi:8000
-      - API_V1_STR=/api/v1
+      - API_V1_STR=${API_V1_STR:-/api/v1}
       - APP_DATA_DIR=/workspace/workspace_data
     volumes:
       - pashto_shared_data:/workspace/workspace_data

@@ -10,6 +10,8 @@ An end-to-end, resource-efficient Speech-to-Text (ASR) system built to fine-tune
 * **Core Model:** Whisper-Small fine-tuned using Low-Rank Adaptation (LoRA) and merged for optimized execution footprints.
 * **Accuracy Performance:** Reached a target Word Error Rate (WER) of **43.83%** (recorded from a baseline error rate of over 100%).
 * **Hardware Profile:** Engineered to support runtime environments utilizing standard hardware constraints (CPU execution friendly, low VRAM configurations).
+* **Structured Stream Diagnostics:** Replaced generic console print statements with python's native `logging` stream to provide clean, timestamped performance metrics (`[YYYY-MM-DD HH:MM:SS] [LEVEL] [file.py:line]`).
+* **Container Resource Protection:** Integrated localized sliding duration audio pruning caps (30-second sliding processing window) inside the preprocessing pipeline to mitigate memory leaks and out-of-memory (OOM) failures on low-resource standard CPU runtimes.
 
 ---
 
@@ -58,6 +60,7 @@ STT_Whisper_Pashto/
 ├── Dockerfile.streamlit        # Dockerfile for the Streamlit frontend
 ├── docker-compose.yml          # Docker Compose configuration for multi-container orchestration
 ├── .dockerignore               # Docker ignore file to exclude unnecessary files from the build context
+├── .env.example                # Example environment variable configuration file  
 |
 ├── requirements.txt            # Python dependencies for the project
 └── README.md                   # System configuration and documentation handbook
@@ -114,6 +117,15 @@ Stop and remove container instances smoothly:
 docker compose down
 ```
 
+### 🔧 Dynamic Runtime Configuration Injection
+The container cluster is decoupled from hardcoded configuration strings. When running `docker compose up`, the containers automatically ingest your host machine's `.env` parameters:
+
+* **Backend Environment Mapping:** Spawns a container instance running with the exact logging verbosity dictated by `${ENV_MODE}`.
+
+* **Internal Network Routing:** The frontend container isolates network routing by targeting the backend's internal Docker DNS link (`http://fastapi:8000`) automatically, preventing host port collisions.
+
+* **CPU Multiprocessing Core Optimization:** The initialization engine dynamically samples your host processor layout and maps thread configurations across OpenMP (`OMP_NUM_THREADS`) and Intel MKL libraries. It automatically allocates half of your machine's physical cores (bounded between 1 and 4 cores) to process heavy Whisper matrix calculations without locking up your system.
+
 * **Data Persistence Matrix:**
 User account schemas, history metrics, and audio staging blocks are persistently written to a local named Docker volume (pashto_shared_data). Your local transaction logs remain safe even if your containers are destroyed or updated.
 
@@ -136,13 +148,9 @@ pip install -r requirements.txt
 ```
 
 ### 2. Configure Environment Variables
-Create an environmental validation configuration file named .env inside your root workspace directory:
+Copy the configuration template to create your local environment file:
 ```bash
-APP_NAME="Pashto Whisper Production API"
-DEBUG=False
-MERGED_MODEL_PATH="Sabtain-Dev/STT-Whisper-Pashto"
-HF_TOKEN=""
-```
+cp .env.example .env
 
 ### 3. Launching the FastAPI Backend Service
 ```bash

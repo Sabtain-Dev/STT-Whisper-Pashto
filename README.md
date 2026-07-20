@@ -168,6 +168,7 @@ pip install -r requirements.txt
 Copy the configuration template to create your local environment file:
 ```bash
 cp .env.example .env
+```
 
 ### 3. Launching the FastAPI Backend Service
 ```bash

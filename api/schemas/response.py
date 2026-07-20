@@ -1,7 +1,5 @@
 # api/schemas/response.py
 
-# These files establish immutable contracts for operational payload data shapes, including output hyperparameters and detailed performance tracking metrics.
-
 from pydantic import BaseModel
 from typing import Optional
 
@@ -20,4 +18,5 @@ class TranscriptionResponse(BaseModel):
     transcription: str
     wer_score: Optional[float] = None
     processing_time_sec: float
+    inference_time_sec: float
     model_version: str

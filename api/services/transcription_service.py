@@ -1,9 +1,9 @@
 # api/services/transcription_service.py
 
-# Runs validation logic, writes binary streams dynamically using disk staging configurations, and coordinates text evaluations.
 import os
 import time
 import shutil
+import uuid
 from typing import Optional, Tuple
 from fastapi import UploadFile
 from api.config import settings
@@ -28,10 +28,13 @@ class TranscriptionService:
         if ext not in settings.SUPPORTED_FORMATS:
             raise CustomAPIException(f"Unsupported file format extension: '.{ext}'. Use valid options.", status_code=400)
 
-    def generate_speech_to_text(self, file: UploadFile, reference_text: Optional[str] = None) -> Tuple[str, Optional[float], float]:
+    def generate_speech_to_text(self, file: UploadFile, reference_text: Optional[str] = None) -> Tuple[str, Optional[float], float, float]:
         self.run_file_system_checks(file)
         
-        temp_file_path = os.path.join(settings.TEMP_API_DIR, f"prod_task_{os.getpid()}_{file.filename}")
+        # Use UUID to prevent file collisions during concurrent uploads
+        file_ext = file.filename.split(".")[-1].lower()
+        temp_file_path = os.path.join(settings.TEMP_API_DIR, f"prod_task_{uuid.uuid4().hex}.{file_ext}")
+        
         start_time = time.perf_counter()
         
         try:
@@ -39,11 +42,13 @@ class TranscriptionService:
             with open(temp_file_path, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
                 
-            # Perform ML Inference call using our dependency injected engine instance
+            # Perform ML Inference with precise execution timing
             logger.info("Executing acoustic sequence inference loops...")
+            inference_start = time.perf_counter()
             inferred_text = self.engine.transcribe(temp_file_path)
+            inference_duration = round(time.perf_counter() - inference_start, 3)
             
-            # Compute WER statistics if a reference script mapping is supplied
+            # Compute WER statistics if reference text is supplied
             wer_score = None
             if reference_text and reference_text.strip():
                 if JIWER_AVAILABLE:
@@ -52,11 +57,13 @@ class TranscriptionService:
                 else:
                     logger.warning("WER metrics skipped: 'jiwer' package is unindexed in runtime context.")
             
-            end_time = time.perf_counter()
-            duration = round(end_time - start_time, 3)
-            logger.info(f"Successfully processed audio in {duration} seconds.")
+            total_duration = round(time.perf_counter() - start_time, 3)
+            logger.info(
+                f"Successfully processed audio '{file.filename}' | "
+                f"Inference: {inference_duration}s | Total: {total_duration}s"
+            )
             
-            return inferred_text, wer_score, duration
+            return inferred_text, wer_score, total_duration, inference_duration
 
         except CustomAPIException:
             raise
@@ -64,6 +71,7 @@ class TranscriptionService:
             logger.error(f"Execution error hit inside operational service routines: {str(e)}", exc_info=True)
             raise CustomAPIException("Linguistic engine dropped during transcription operations.", status_code=500)
         finally:
+            # Guaranteed cleanup step prevents disk exhaustion over long runtimes
             if os.path.exists(temp_file_path):
                 try:
                     os.remove(temp_file_path)

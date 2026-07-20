@@ -7,6 +7,7 @@ from typing import Optional
 from api.schemas.response import HealthResponse, ModelInfoResponse, TranscriptionResponse
 from api.dependencies import get_shared_transcriber_engine
 from api.services.transcription_service import TranscriptionService
+from api.config import settings
 
 # Instantiate router with dedicated semantic tags for self-documenting UI generation
 router = APIRouter(prefix="/transcription", tags=["Pashto Transcription Operations Engine"])
@@ -18,10 +19,10 @@ async def get_health():
 
 @router.get("/model-info", response_model=ModelInfoResponse, summary="Retrieve Embedded Model Track Metrics")
 async def get_model_info():
-    """Exposes structured model metadata detailing current version and baseline Pashto dialetic WER scoring."""
+    """Exposes structured model metadata detailing current version and baseline Pashto dialect WER scoring."""
     return {
         "model": "STT-Whisper-Pashto",
-        "version": "1.3",
+        "version": "2.1",
         "language": "Pashto",
         "framework": "Transformers",
         "wer": 43.83
@@ -39,12 +40,15 @@ async def post_transcribe(
     along with computation timestamps.
     """
     service = TranscriptionService(engine=engine)
-    text_output, wer_score, processing_time = service.generate_speech_to_text(file, reference_text)
+    
+    # Unpack all 4 metrics returned by the transcription service
+    text_output, wer_score, processing_time, inference_time = service.generate_speech_to_text(file, reference_text)
     
     return {
         "filename": file.filename,
         "transcription": text_output,
         "wer_score": wer_score,
         "processing_time_sec": processing_time,
-        "model_version": "Pashto-Whisper-v1.3-LoRA"
+        "inference_time_sec": inference_time,
+        "model_version": getattr(settings, "MERGED_MODEL_PATH", "Pashto-Whisper-v2.1-LoRA")
     }

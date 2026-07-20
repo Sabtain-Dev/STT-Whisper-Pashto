@@ -1,5 +1,4 @@
 # tests/test_inference.py
-# import pytest
 
 def test_end_to_end_transcription_pipeline_mocked(client, mock_pashto_audio, mocker):
     """Verifies system flow from file intake down to structured response payloads."""
@@ -21,6 +20,8 @@ def test_end_to_end_transcription_pipeline_mocked(client, mock_pashto_audio, moc
     json_data = response.json()
     assert "transcription" in json_data
     assert json_data["transcription"] == "په خیر راغلیاست"
+    assert "processing_time_sec" in json_data
+    assert "inference_time_sec" in json_data
     
     # Confirm our background service was invoked exactly once
     mocked_transcribe.assert_called_once()

@@ -7,6 +7,7 @@ from typing import Optional
 from api.schemas.response import HealthResponse, ModelInfoResponse, TranscriptionResponse
 from api.dependencies import get_shared_transcriber_engine
 from api.services.transcription_service import TranscriptionService
+from api.utils.validation import validate_audio_file
 from api.config import settings
 
 # Instantiate router with dedicated semantic tags for self-documenting UI generation
@@ -22,7 +23,7 @@ async def get_model_info():
     """Exposes structured model metadata detailing current version and baseline Pashto dialect WER scoring."""
     return {
         "model": "STT-Whisper-Pashto",
-        "version": "2.1",
+        "version": "2.3.0",
         "language": "Pashto",
         "framework": "Transformers",
         "wer": 43.83
@@ -35,10 +36,13 @@ async def post_transcribe(
     engine = Depends(get_shared_transcriber_engine)
 ):
     """
-    Ingests multi-part audio streams, validates format criteria dynamically, 
-    stages tracking components safely, and returns transcribed Pashto text 
+    Validates file formats & size bounds, processes multi-part audio streams safely, 
+    stages tracking components securely, and returns transcribed Pashto text 
     along with computation timestamps.
     """
+    # Secure file input and format validation layer
+    await validate_audio_file(file)
+
     service = TranscriptionService(engine=engine)
     
     # Unpack all 4 metrics returned by the transcription service
@@ -50,5 +54,5 @@ async def post_transcribe(
         "wer_score": wer_score,
         "processing_time_sec": processing_time,
         "inference_time_sec": inference_time,
-        "model_version": getattr(settings, "MERGED_MODEL_PATH", "Pashto-Whisper-v2.1-LoRA")
+        "model_version": getattr(settings, "MERGED_MODEL_PATH", "Pashto-Whisper-v2.3.0-LoRA")
     }

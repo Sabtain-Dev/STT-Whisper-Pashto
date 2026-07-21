@@ -38,6 +38,8 @@ STT_Whisper_Pashto/
 │   │   └── response.py
 │   ├── services/               # Core business logic handlers (disk staging & verification)
 │   │   └── transcription_service.py
+│   ├── utils/                  # Included data validation and utility functions
+│   │   └── validation.py
 │   ├── config.py               # Environmental configuration and settings controller
 │   ├── dependencies.py         # Thread-safe model singleton dependency injection matrix
 │   ├── exceptions.py           # Custom application domain error wrappers
@@ -52,6 +54,7 @@ STT_Whisper_Pashto/
 │   ├── audio_utils.py          # Waveform decoders and audio standardizers
 │   └── model_utils.py          # Weights management utilities
 │
+├── app_testing/                # App testing notebook for Google Collab
 ├── notebooks/                  # Experimental training scripts & model evaluation labs
 ├── configs/                    # Static configuration parameter specifications
 ├── workspace_data/             # Local database assets, upload stores, and API temp storage
@@ -62,6 +65,7 @@ STT_Whisper_Pashto/
 ├── .dockerignore               # Docker ignore file to exclude unnecessary files from the build context
 ├── .env.example                # Example environment variable configuration file  
 |
+├── LICENSE                     # MIT License for the project
 ├── requirements.txt            # Python dependencies for the project
 └── README.md                   # System configuration and documentation handbook
 ```
@@ -139,10 +143,13 @@ The system is optimized for low-resource CPU container execution, utilizing thre
 
 | Audio Length | Total API Latency |
 | :--- | :--- |
-| **11 Seconds** | ~164.4s (First Inference)|
-| **15 Seconds** | ~89.752s |
-| **11 Seconds** | ~46.2s |
-| **15 Minutes** | ~46.7s |
+| **11 Seconds** | ~164.4s (1st Inference on CPU)|
+| **15 Seconds** | ~89.752s (2nd Inference on CPU)|
+| **11 Seconds** | ~46.2s (3rd Inference on CPU)|
+| **15 Seconds** | ~46.7s (4th Inference on CPU)|
+| **10 Seconds** | ~40.7s (1st Inference on GPU) |
+| **14 Seconds** | ~8.7s (2nd Inference on GPU) |
+| **13 Seconds** | ~8.4s (3rd Inference on GPU) |
 
 > **Optimization Note:** The Whisper model weights are cached in memory upon application startup (`lru_cache` singleton pattern). Temporary files are staged under atomic UUID naming and automatically unlinked from the host disk immediately following inference execution.
 
@@ -225,6 +232,45 @@ On every `push` or `pull_request` targeting the `main` branch, the runner automa
 
 ### Monitoring Runs
 You can inspect active build sequences, execution logs, and detailed step breakdowns under the **Actions** tab of this repository.
+
+---
+
+## 🛡️ Security, Guidelines & Technical Specifications
+
+### 🔒 Security Considerations
+
+* **Local Data Processing:** Audio uploads and temporary processing files are processed within the server environment and automatically cleaned up post-transcription to prevent data leaks or disk overflow.
+* **API Key Management:** Sensitive credentials (such as `NGROK_AUTHTOKEN` or API tokens) are strictly managed using environment variables (`.env`) and are excluded from version control via `.gitignore`.
+* **CORS & Network Safety:** In production, cross-origin resource sharing (CORS) rules on the FastAPI backend limit requests to trusted origins. When deployed via temporary tunnels (e.g., ngrok), endpoints are protected behind unique URLs.
+* **Input Validation:** File upload endpoints validate MIME types and file signatures prior to passing streams to `ffmpeg` or `whisper` model layers to prevent arbitrary file execution.
+
+### 🎙️ Supported File Formats
+
+The backend uses `ffmpeg` for audio decoding, allowing standard audio and video container support.
+
+| Category | Supported Formats | Recommended Format |
+| :--- | :--- | :--- |
+| **Audio** | `.wav`, `.mp3`, `.mp4`, `.m4a`, `.flac`, `.ogg`, `.opus`, `.webm`, `.aac`, `.wma` | **`.wav` (16kHz, Mono)** |
+
+> 💡 **Optimal Inference Performance:** For highest accuracy, supply uncompressed `.wav` files sampled at **16,000 Hz (16kHz)** with a **single audio channel (mono)**.
+
+### ⚡ Maximum Upload Size
+
+* **Default Single Audio File Limit:** **25 MB** per API request / Streamlit UI upload.
+* **Handling Larger Files:** For extended recordings (e.g., long interviews or lectures), audio files should be pre-chunked into 30-second segments before passing through the transcription pipeline to maintain memory stability.
+
+### ⚠️ Known Limitations
+
+* **Dialectal Variations:** Model accuracy may vary across different Pashto regional dialects (e.g., Northern/Yousafzai vs. Southern/Kandahari).
+* **Word Error Rate (WER):** The fine-tuned checkpoint currently achieves a **43.83% WER**. Transcriptions may still contain inaccuracies, particularly with non-standard vocabulary, background noise, or overlapping speakers.
+* **Domain Context:** Performance is highest in trained domain areas (Agriculture, Food, Services, and General Conversation) and may show reduced performance in highly technical or legal contexts.
+* **Hardware Sensitivity:** Running inference on CPU significantly increases execution latency compared to running on CUDA-enabled GPUs.
+
+### 📜 Responsible Use
+
+* **Ethical Usage:** This tool is built to advance low-resource language processing and support accessibility for Pashto speakers. It should **not** be used for unauthorized surveillance, deceptive practices, or malicious voice profiling.
+* **Privacy & Consent:** Always obtain explicit consent from speakers before recording and uploading their audio for automated transcription.
+* **Verification Required:** Due to the experimental nature of speech recognition fine-tuning, do not rely solely on automated transcriptions for critical legal, medical, or safety-critical decisions without human review.
 
 ---
 

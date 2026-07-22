@@ -72,11 +72,13 @@ The application adopts a decoupled, multi-tier architecture separating the clien
 
 ## 📸 Screenshots
 
-*(Visual interface previews located in `./assets/screenshots/`)*
+<div align="center">
 
-| Streamlit Dashboard | API Documentation (Swagger UI) |
-| --- | --- |
-| *(./assets/screenshots/app-about.png)* | *(./assets/screenshots/api-1.png)* |
+| Streamlit Interactive UI | FastAPI Swagger Portal |
+| :---: | :---: |
+| <img src="assets/screenshots/app-about.png" width="100%" alt="Streamlit App Interface"/> | <img src="assets/screenshots/api-1.png" width="100%" alt="FastAPI Swagger Documentation"/> |
+
+</div>
 
 ---
 
@@ -193,24 +195,37 @@ streamlit run app/app.py
 
 ---
 
-## 🐳 Docker Deployment
+## 🐳 Docker Deployment & Quick Start
 
-The entire stack can be launched via Docker Compose.
+Pre-built container images are published on Docker Hub. You do not need to build the project from source or install local machine learning dependencies.
 
-```bash
-# Build container images
-docker compose build
+* 📦 **API Image:** [`msabtainkhan/stt-whisper-pashto-api:v1.0`](https://hub.docker.com/r/msabtainkhan/stt-whisper-pashto-api)
+* 📦 **Frontend Image:** [`msabtainkhan/stt-whisper-pashto-streamlit:v1.0`](https://hub.docker.com/r/msabtainkhan/stt-whisper-pashto-streamlit)
 
-# Launch the interconnected services
-docker compose up
+### 🚀 Launching the App Locally
 
-# Stop container stack
-docker compose down
+1. **Clone the repository:**
+   ```bash
+   git clone (https://github.com/Sabtain-Dev/STT-Whisper-Pashto.git)
+   cd STT-Whisper-Pashto
+   ```
 
-```
-
+2. **Run With Docker Compose**
+    ```bash
+    # Launch the interconnected services
+    docker compose up
+    ```
+3. **Access The Application**
 * **Frontend Application:** http://localhost:8501
 * **FastAPI OpenAPI Documentation:** http://localhost:8000/api/v1/docs
+
+4. **Pulling Manually via CLI**
+
+    * If you wants to pull your images directly from terminal:
+    ```bash
+    docker pull msabtainkhan/stt-whisper-pashto-api:v1.0
+    docker pull msabtainkhan/stt-whisper-pashto-streamlit:v1.0
+    ```
 
 ---
 

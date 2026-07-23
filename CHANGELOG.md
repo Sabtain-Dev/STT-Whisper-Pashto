@@ -7,7 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [v2.2.0] - Unreleased / Current
+## [v2.6] - 2026-07-23
+### Added
+- Standardized API reference guide (`docs/API.md`) with cURL and Python client execution examples.
+- Pre-configured Postman Collection (`docs/postman/STT_Whisper_Pashto.postman_collection.json`) for endpoint testing.
+- Enhanced OpenAPI and Swagger UI metadata with route tags, detailed request parameters, and response schemas.
+
+---
+
+## [v2.5] - 2026-07-23
+### Added
+- Comprehensive system architecture documentation and Mermaid design diagrams in `docs/`:
+  - System Architecture & Data Flow
+  - Sequence Request/Response Flow
+  - Machine Learning Inference & Fine-Tuning Pipelines
+
+### Fixed
+- Updated `docker-compose.yml` healthcheck command to use Python `urllib` module instead of `curl` to prevent false-unhealthy container flags on minimal base images.
+- Pointed backend healthcheck probe to active API endpoint path.
+
+---
+
+## [v2.4] - 2026-07-22
+### Added
+- Dual Docker Compose strategy: `docker-compose.yml` for production image pulls and `docker-compose.dev.yml` for local builds.
+- Published production-ready multi-platform container images to Docker Hub (`msabtainkhan/stt-whisper-pashto-fastapi` and `msabtainkhan/stt-whisper-pashto-streamlit`).
+- Added Docker Hub badges and streamlined local installation instructions to README.
+
+---
+
+## [v2.2.0] - 2026-07-20
 ### Added
 - Multi-metric timing tracking, exposing both inference time and total file processing time in API payloads.
 ### Fixed
@@ -60,7 +89,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v1.7]
 ### Architecture
-- Refactored FastAPI code into modular modular layers (`routes`, `services`, `schemas`, `dependencies`).
+- Refactored FastAPI code into modular layers (`routes`, `services`, `schemas`, `dependencies`).
 - Initialized core FastAPI endpoints for Pashto speech transcription.
 
 ---

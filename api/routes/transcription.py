@@ -2,13 +2,19 @@
 
 # Builds self-documenting parameters and integrates version endpoints under clean API specifications.
 
-from fastapi import APIRouter, UploadFile, File, Form, Depends
 from typing import Optional
-from api.schemas.response import HealthResponse, ModelInfoResponse, TranscriptionResponse
+
+from fastapi import APIRouter, Depends, File, Form, UploadFile
+
+from api.config import settings
 from api.dependencies import get_shared_transcriber_engine
+from api.schemas.response import (
+    HealthResponse,
+    ModelInfoResponse,
+    TranscriptionResponse,
+)
 from api.services.transcription_service import TranscriptionService
 from api.utils.validation import validate_audio_file
-from api.config import settings
 
 # Instantiate router with dedicated semantic tags for self-documenting UI generation
 router = APIRouter(prefix="/transcription", tags=["Pashto Transcription Operations Engine"])

@@ -4,7 +4,9 @@
 
 import os
 from typing import Set
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 class Settings(BaseSettings):
     # App General Settings

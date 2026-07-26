@@ -1,9 +1,12 @@
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
+
 from api.config import settings
-from api.routes.transcription import router as transcription_router
 from api.exceptions import register_exception_handlers
 from api.logger import logger
+from api.routes.transcription import router as transcription_router
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

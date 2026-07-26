@@ -3,6 +3,7 @@
 # These files establish immutable contracts for operational payload data shapes, including input hyperparameters and detailed performance tracking metrics.
 
 from pydantic import BaseModel, Field
+
 # from typing import Optional
 
 class TranscriptionGenerationConfig(BaseModel):

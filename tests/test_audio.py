@@ -1,7 +1,9 @@
-import pytest
 import numpy as np
+import pytest
+
 # import io
-from utils.audio_utils import preprocess_audio, convert_to_wav
+from utils.audio_utils import convert_to_wav, preprocess_audio
+
 
 def test_preprocess_audio_matrix_generation(mocker):
     """Ensures preprocess_audio returns a valid 16kHz numpy array."""

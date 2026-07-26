@@ -12,16 +12,16 @@ separately (see README) before using the Transcribe tab. Translation
 unchanged.
 """
 
+import csv
+import hashlib
+import io
 import os
 import re
-import csv
-import io
 import secrets
 import sqlite3
-import hashlib
-from pathlib import Path
 from datetime import datetime
 from difflib import SequenceMatcher
+from pathlib import Path
 
 import streamlit as st
 import torch
@@ -461,7 +461,7 @@ def make_csv_bytes(rows, headers):
 def make_excel_bytes(rows, headers):
     try:
         import openpyxl
-        from openpyxl.styles import Font, Alignment
+        from openpyxl.styles import Alignment, Font
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = "Transcriptions"

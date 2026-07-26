@@ -1,6 +1,8 @@
-import sys
 import logging
+import sys
+
 from api.config import settings
+
 
 def setup_logger():
     logger = logging.getLogger("pashto_asr")

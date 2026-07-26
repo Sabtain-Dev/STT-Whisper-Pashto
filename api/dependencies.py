@@ -3,6 +3,7 @@
 # Provides singletons and instance managers. This registers your model runner once at startup and dynamically shares it across threads to avoid multi-gigabyte memory spikes.
 
 import functools
+
 from api.config import settings
 from api.logger import logger
 

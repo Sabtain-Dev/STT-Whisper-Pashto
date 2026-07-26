@@ -1,14 +1,16 @@
 # api/services/transcription_service.py
 
 import os
-import time
 import shutil
+import time
 import uuid
 from typing import Optional, Tuple
+
 from fastapi import UploadFile
+
 from api.config import settings
-from api.logger import logger
 from api.exceptions import CustomAPIException
+from api.logger import logger
 
 try:
     from jiwer import wer as jiwer_wer

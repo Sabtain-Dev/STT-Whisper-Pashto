@@ -6,8 +6,8 @@ Only the latest release tag receives active security patches.
 
 | Version | Supported          |
 | ------- | ------------------ |
-| v2.6.x  | :white_check_mark: |
-| < 2.6.0 | :x:                |
+| v2.6  | :white_check_mark: |
+| < 2.6 | :x:                |
 
 ## Reporting a Vulnerability
 

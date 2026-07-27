@@ -4,7 +4,6 @@ import os
 import shutil
 import time
 import uuid
-from typing import Optional, Tuple
 
 from fastapi import UploadFile
 
@@ -30,7 +29,7 @@ class TranscriptionService:
         if ext not in settings.SUPPORTED_FORMATS:
             raise CustomAPIException(f"Unsupported file format extension: '.{ext}'. Use valid options.", status_code=400)
 
-    def generate_speech_to_text(self, file: UploadFile, reference_text: Optional[str] = None) -> Tuple[str, Optional[float], float, float]:
+    def generate_speech_to_text(self, file: UploadFile, reference_text: str | None = None) -> tuple[str, float | None, float, float]:
         self.run_file_system_checks(file)
         
         # Use UUID to prevent file collisions during concurrent uploads
@@ -70,7 +69,7 @@ class TranscriptionService:
         except CustomAPIException:
             raise
         except Exception as e:
-            logger.error(f"Execution error hit inside operational service routines: {str(e)}", exc_info=True)
+            logger.error(f"Execution error hit inside operational service routines: {e!s}", exc_info=True)
             raise CustomAPIException("Linguistic engine dropped during transcription operations.", status_code=500)
         finally:
             # Guaranteed cleanup step prevents disk exhaustion over long runtimes

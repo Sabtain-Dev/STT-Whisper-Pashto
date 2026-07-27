@@ -2,8 +2,6 @@
 
 # Builds self-documenting parameters and integrates version endpoints under clean API specifications.
 
-from typing import Optional
-
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 
 from api.config import settings
@@ -29,7 +27,7 @@ async def get_model_info():
     """Exposes structured model metadata detailing current version and baseline Pashto dialect WER scoring."""
     return {
         "model": "STT-Whisper-Pashto",
-        "version": "2.3.0",
+        "version": "2.7",
         "language": "Pashto",
         "framework": "Transformers",
         "wer": 43.83
@@ -38,7 +36,7 @@ async def get_model_info():
 @router.post("/transcribe", response_model=TranscriptionResponse, summary="Transcribe Audio File to Pashto Script")
 async def post_transcribe(
     file: UploadFile = File(..., description="Target dialect audio stream track asset container payload."),
-    reference_text: Optional[str] = Form(None, description="Optional baseline ground truth reference text script for computing WER metrics."),
+    reference_text: str | None = Form(None, description="Optional baseline ground truth reference text script for computing WER metrics."),
     engine = Depends(get_shared_transcriber_engine)
 ):
     """

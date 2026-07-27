@@ -25,7 +25,7 @@ def preprocess_audio(audio_input, target_sr=16000):
             
         return speech
     except Exception as e:
-        raise RuntimeError(f"Error extracting audio features during preprocessing: {str(e)}")
+        raise RuntimeError(f"Error extracting audio features during preprocessing: {str(e)}") from e
 
 def convert_to_wav(input_path, output_path, target_sr=16000):
     """

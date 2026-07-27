@@ -27,7 +27,7 @@ def register_exception_handlers(app: FastAPI):
 
     @app.exception_handler(Exception)
     async def global_panic_handler(request: Request, exc: Exception):
-        logger.critical(f"Unhandled critical system exception occurred on path '{request.url.path}': {str(exc)}", exc_info=True)
+        logger.critical(f"Unhandled critical system exception occurred on path '{request.url.path}': {exc!s}")
         return JSONResponse(
             status_code=500,
             content={"success": False, "detail": "An unexpected server error occurred in the transcription pipeline."}

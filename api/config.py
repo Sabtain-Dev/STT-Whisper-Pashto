@@ -3,8 +3,6 @@
 # This utilizes Pydantic Settings to automatically capture environmental parameters (.env) with secure fallbacks, establishing a clean source of truth for runtime configurations.
 
 import os
-from typing import Set
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -24,7 +22,7 @@ class Settings(BaseSettings):
     
     # Audio Storage Settings
     TEMP_API_DIR: str = "./workspace_data/api_temp"
-    SUPPORTED_FORMATS: Set[str] = {"wav", "mp3", "mp4", "m4a", "flac", "ogg", "opus", "webm", "aac", "wma"}
+    SUPPORTED_FORMATS: set[str] = {"wav", "mp3", "mp4", "m4a", "flac", "ogg", "opus", "webm", "aac", "wma"}
     MAX_UPLOAD_SIZE_MB: int = 50
 
     # Modern Pydantic v2 settings configuration mapping

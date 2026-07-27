@@ -1,7 +1,5 @@
 # api/schemas/response.py
 
-from typing import Optional
-
 from pydantic import BaseModel
 
 
@@ -18,7 +16,7 @@ class ModelInfoResponse(BaseModel):
 class TranscriptionResponse(BaseModel):
     filename: str
     transcription: str
-    wer_score: Optional[float] = None
+    wer_score: float | None = None
     processing_time_sec: float
     inference_time_sec: float
     model_version: str

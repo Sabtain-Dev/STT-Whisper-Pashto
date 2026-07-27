@@ -25,7 +25,8 @@ def preprocess_audio(audio_input, target_sr=16000):
             
         return speech
     except Exception as e:
-        raise RuntimeError(f"Error extracting audio features during preprocessing: {str(e)}") from e
+        # Use explicit conversion flag (!) instead of calling str() inside f-string per linter guidance
+        raise RuntimeError(f"Error extracting audio features during preprocessing: {e!s}") from e
 
 def convert_to_wav(input_path, output_path, target_sr=16000):
     """

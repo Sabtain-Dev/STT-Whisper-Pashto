@@ -969,9 +969,12 @@ def ai_chat_page():
                 st.markdown("---")
                 st.markdown("**AI Response:**")
                 st.markdown(answer)
-                st.download_button("Download AI Response",
-                                    data=f"Question:\n{user_question}\n\nContext:\n{context_text}\n\nAnswer:\n{answer}".encode("utf-8"),
-                                    file_name="ai_response.txt", mime="text/plain; charset=utf-8")
+                st.download_button(
+                    "Download AI Response",
+                    data=f"Question:\n{user_question}\n\nContext:\n{context_text}\n\nAnswer:\n{answer}".encode(),
+                    file_name="ai_response.txt",
+                    mime="text/plain; charset=utf-8",
+                )
 
 # ── Main ────────────────────────────────────────────────────────────────
 

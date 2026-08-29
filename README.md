@@ -21,6 +21,7 @@ An end-to-end Automatic Speech Recognition (ASR) system for Pakistani Pashto bui
 - [Demo Video](#demo-video)
 - [Dataset](#dataset)
 - [Finetuned Model](#finetuned-model)
+- [Hugging Face Spaces](#hugging-face-spaces)
 - [Project Statistics](#project-statistics)
 - [Project Structure](#project-structure)
 - [Installation](#installation)
@@ -109,6 +110,12 @@ The fine-tuned Whisper-LoRA checkpoint is open-sourced and hosted directly on Hu
 * **Base Architecture:** OpenAI Whisper-Small
 * **Fine-Tuning Method:** Low-Rank Adaptation (LoRA / PEFT)
 * **Word Error Rate (WER):** **43.83%** (Evaluated down from a baseline error rate of >100%)
+
+---
+
+## 🤗 Hugging Face Spaces
+
+The hugging face space is live at: [Sabtain-Dev/STT-Whisper-Pashto-Spaces](https://huggingface.co/spaces/codewithjarair/Pashto-stt)
 
 ---
 

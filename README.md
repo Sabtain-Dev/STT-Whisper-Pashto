@@ -88,7 +88,9 @@ The application adopts a decoupled, multi-tier architecture separating the clien
 
 Watch the complete walkthrough and live demonstration on YouTube:
 
-▶️ **[Pashto Speech-to-Text System Demonstration](https://youtu.be/vtoy1w7FSd0)**
+[![Watch the Lumeluxe RAG Chatbot demonstration](https://img.youtube.com/vi/vtoy1w7FSd0/hqdefault.jpg)](https://youtu.be/vtoy1w7FSd0)
+
+Select the preview to watch the video.
 
 ---
 

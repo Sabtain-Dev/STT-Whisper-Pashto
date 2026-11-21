@@ -1,0 +1,40 @@
+name: Bug report
+description: Report a problem with the application, API, or project setup.
+title: "Bug: "
+body:
+  - type: markdown
+    attributes:
+      value: Before submitting, search existing issues and remove secrets or personal data from logs.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe the problem and what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Include the smallest set of steps or request details that reproduces the problem.
+      placeholder: |
+        1. Start ...
+        2. Submit ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include relevant details such as operating system, Python version, and deployment method.
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs or screenshots
+      description: Paste relevant output and redact credentials, tokens, and personal data.
+      render: text
+    validations:
+      required: false
